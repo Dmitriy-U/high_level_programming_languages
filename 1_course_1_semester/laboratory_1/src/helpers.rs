@@ -29,3 +29,27 @@ pub fn convert_input_to_vector(string_source: String) -> Vec<i32> {
     }
     vector
 }
+
+pub fn sort(sequence: &mut Vec<i32>) {
+    let mut index_min: usize = 0;
+    let mut index_temp: i32 = 0;
+    let length = sequence.len();
+
+    for index in 0..length {
+        index_min = index;
+
+        for index_in_slice in (index + 1)..length {
+            if sequence[index_in_slice] < sequence[index_min] {
+                index_min = index_in_slice;
+            }
+        }
+
+        if index != index_min {
+            index_temp = sequence[index];
+            sequence[index] = sequence[index_min];
+            sequence[index_min] = index_temp;
+        }
+
+        println!("Итерация {index} {:?}", sequence);
+    }
+}
