@@ -1,18 +1,10 @@
-use std::io;
-use regex::Regex;
+mod helpers;
 
-fn validate_input(string: &String) -> bool {
-    let re = Regex::new(r"^[\d ]+$").unwrap();
-    let match_string = &string[..];
-    re.is_match(match_string)
-}
+use crate::helpers::{convert_input_to_vector, get_user_input_string};
 
-fn main() -> io::Result<()> {
-    let mut user_input = String::new();
-    println!("Введите последовательность цифр:");
-    io::stdin().read_line(&mut user_input).expect("Не введёна корректная последовательность цифр");
-    user_input = String::from(user_input.trim());
-    println!("Введено: {}", user_input);
-    assert!(validate_input(&user_input));
-    Ok(())
+fn main() {
+    let user_input_string = get_user_input_string();
+    let user_input_vector = convert_input_to_vector(user_input_string);
+
+    println!("{:?}", user_input_vector);
 }
