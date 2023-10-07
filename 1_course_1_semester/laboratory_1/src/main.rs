@@ -1,10 +1,11 @@
 mod helpers;
+mod laboratory_1_1;
+mod laboratory_1_2;
 
-use crate::helpers::{convert_input_to_vector, get_user_input_string, sort};
+use crate::laboratory_1_1::do_laboratory_1_1;
+use crate::laboratory_1_2::do_laboratory_1_2;
 
 fn main() {
-    let user_input_string = get_user_input_string();
-    let mut user_input_vector = convert_input_to_vector(user_input_string);
-    sort(&mut user_input_vector);
-    // TODO: Вывести для каждого уникального элемента массива процент от общего количества элементов
+    do_laboratory_1_1();
+    do_laboratory_1_2();
 }
