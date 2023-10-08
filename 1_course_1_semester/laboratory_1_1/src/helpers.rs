@@ -35,31 +35,27 @@ pub fn get_user_sequence_of_digits() -> Vec<i32> {
     convert_input_to_vector(user_input_string)
 }
 
-pub fn get_user_sequence_of_digits_with_count(count: usize) -> Vec<i32> {
-    let mut user_input_vector = get_user_sequence_of_digits();
-    let length = user_input_vector.len();
-    if length != count {
-        println!("You need to type {count} of digits");
-        user_input_vector = get_user_sequence_of_digits();
-    }
-    user_input_vector
-}
+pub fn sort(sequence: &mut Vec<i32>) {
+    let mut index_min: usize = 0;
+    let mut index_temp: i32 = 0;
+    let length = sequence.len();
 
-pub fn get_user_two_dimensional_sequence(count: usize) -> Vec<Vec<i32>> {
-    let mut user_two_dimensional_sequence: Vec<Vec<i32>> = Vec::new();
-    for index in 0..count {
-        let row: usize = index + 1;
-        println!("{row} row");
-        user_two_dimensional_sequence.push(get_user_sequence_of_digits_with_count(count));
-    }
+    for index in 0..length {
+        index_min = index;
 
-    println!("Typed two-dimensional sequence:");
-    for row_index in 0..user_two_dimensional_sequence.len() {
-        for item_index in 0..user_two_dimensional_sequence[row_index].len() {
-            print!("{} ", user_two_dimensional_sequence[row_index][item_index]);
+        for index_in_slice in (index + 1)..length {
+            if sequence[index_in_slice] < sequence[index_min] {
+                index_min = index_in_slice;
+            }
         }
-        println!("");
-    }
 
-    user_two_dimensional_sequence
+        if index != index_min {
+            index_temp = sequence[index];
+            sequence[index] = sequence[index_min];
+            sequence[index_min] = index_temp;
+        }
+
+        let count = index + 1;
+        println!("Iteration {} {:?}", count, sequence);
+    }
 }
