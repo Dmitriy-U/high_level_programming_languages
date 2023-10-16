@@ -7,7 +7,7 @@ cargo run
 ```
 
 ```shell
-cargo run -- ./students.txt
+cargo run -- ./mockup.txt
 ```
 
 ## Run
@@ -17,5 +17,5 @@ cargo run -- ./students.txt
 ```
 
 ```shell
-./laboratory_2 -- ./students.txt
+./laboratory_2 -- ./mockup.txt
 ```
