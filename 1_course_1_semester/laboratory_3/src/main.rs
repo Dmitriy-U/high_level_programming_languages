@@ -11,6 +11,7 @@ enum Expr {
 }
 
 fn main() {
+    let test = 2 * -1;
     // let test: Expr = Expr::Binary(
     //     '*',
     //     Box::new(Expr::Const(1.0)),
