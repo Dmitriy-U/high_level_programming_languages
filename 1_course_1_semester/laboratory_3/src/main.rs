@@ -1,6 +1,6 @@
 mod helpers;
 
-use crate::helpers::get_prepared_expression;
+use crate::helpers::{get_prepared_string, validate_string};
 
 #[derive(Debug)]
 enum Expr {
@@ -11,22 +11,18 @@ enum Expr {
 }
 
 fn main() {
-    let test = 2 * -1;
-    // let test: Expr = Expr::Binary(
-    //     '*',
-    //     Box::new(Expr::Const(1.0)),
-    //     Box::new(Expr::Binary(
-    //         '+',
-    //         Box::new(Expr::Const(2.0)),
-    //         Box::new(Expr::Const(2.0)),
-    //     )));
-    // println!("{:?}", test);
-    let expression = get_prepared_expression(std::env::args());
+    let prepared_string = get_prepared_string(std::env::args());
 
-    if expression.is_none() {
+    if prepared_string.is_none() {
         println!("You did not write a math expression: Example: ./laboratory_3 \"1 + 1 (2 + 2)\"");
         return;
     }
 
-    println!("Prepared expression: {:?}", expression.unwrap());
+    let prepared_string = prepared_string.unwrap();
+    if !validate_string(&prepared_string) {
+        return;
+    }
+
+
+    println!("Prepared expression: {:?}", prepared_string);
 }
