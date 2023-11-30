@@ -1,14 +1,6 @@
 mod helpers;
 
-use crate::helpers::{get_prepared_string, validate_string};
-
-#[derive(Debug)]
-enum Expr {
-    Const(f64),
-    Var(String),
-    Unary(Box<Expr>),
-    Binary(char, Box<Expr>, Box<Expr>),
-}
+use crate::helpers::{get_expression, get_prepared_string, validate_string};
 
 fn main() {
     let prepared_string = get_prepared_string(std::env::args());
@@ -23,6 +15,8 @@ fn main() {
         return;
     }
 
-
     println!("Prepared expression: {:?}", prepared_string);
+
+    let expression = get_expression(&prepared_string);
+    // TODO: Calculate
 }
