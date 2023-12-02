@@ -1,6 +1,6 @@
 mod helpers;
 
-use crate::helpers::{get_expression, get_prepared_string, validate_string};
+use crate::helpers::{calculate_brackets, get_prepared_string, validate_string};
 
 fn main() {
     let prepared_string = get_prepared_string(std::env::args());
@@ -17,6 +17,6 @@ fn main() {
 
     println!("Prepared expression: {:?}", prepared_string);
 
-    let expression = get_expression(&prepared_string);
+    calculate_brackets(prepared_string);
     // TODO: Calculate
 }

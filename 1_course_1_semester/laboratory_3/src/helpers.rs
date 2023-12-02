@@ -1,4 +1,4 @@
-use regex::{Regex};
+use regex::{Captures, Regex};
 use std::env::Args;
 
 enum Operator {
@@ -11,17 +11,12 @@ enum Operator {
 #[derive(Debug)]
 enum Expr {
     Const(f64),
-    Var(char),
+    Var(String),
     Unary(Box<Expr>),
-    Binary(Operator, Box<Expr>, Box<Expr>),
+    Binary(String, Box<Expr>, Box<Expr>),
 }
 
-enum ItemStack {
-    Expr,
-    Operator,
-}
-
-fn get_operator(sub_char: char) -> ItemStack::Operator {
+fn get_operator(sub_char: char) -> Operator {
     match sub_char {
         '+' => Operator::PLUS,
         '-' => Operator::MINUS,
@@ -32,7 +27,14 @@ fn get_operator(sub_char: char) -> ItemStack::Operator {
 }
 
 fn is_operator_char(sub_char: char) -> bool {
-    match Regex::new(r"[\+\-\*/]").unwrap().is_match(&String::from(sub_char)) {
+    match Regex::new(r"[\+\-\*\/]").unwrap().is_match(&String::from(sub_char)) {
+        true => { true }
+        false => { false }
+    }
+}
+
+fn is_operator_high_priority_char(sub_char: char) -> bool {
+    match Regex::new(r"[\*\/]").unwrap().is_match(&String::from(sub_char)) {
         true => { true }
         false => { false }
     }
@@ -61,10 +63,27 @@ pub fn get_prepared_string(args: Args) -> Option<String> {
 
     let trimmed_string = args[0].to_string().replace(" ", "");
 
-    // TODO: -(x) => -1*(x)
+    let mut prepared_string = String::new();
+
+    let chars = trimmed_string.chars().collect::<Vec<char>>();
+    let mut i: usize = 0;
+
+    while i < chars.len() {
+        let sub_char = chars[i];
+
+        if sub_char == '(' && i != 0 {
+            if is_number_char(chars[i - 1].clone()) {
+                prepared_string.push('*');
+            }
+        }
+
+        prepared_string.push(sub_char);
+        i += 1;
+    }
+
     // TODO: --1 => +1
 
-    return Some(trimmed_string);
+    return Some(prepared_string);
 }
 
 pub fn validate_string(string: &String) -> bool {
@@ -99,50 +118,114 @@ pub fn validate_string(string: &String) -> bool {
     true
 }
 
-fn get_expression(&string: &String, index: usize) {
-    let mut items: Vec<ItemStack> = Vec::new();
-    let mut buffer_number: String = String::from("");
-    let mut i = index;
+fn calculate_high_priority_expression(nodes: Vec<String>) -> Vec<String> {
+    // TODO: to complete
+    let mut result_nodes: Vec<String> = Vec::new();
+    let mut buffer_nodes: Vec<String> = Vec::new();
 
-    while i <= string.len {
-        let sub_char: char = string[i];
-
-        // if it is number then add to buffer
-        if is_number_char(sub_char) {
-            buffer_number.push(sub_char);
-            i += 1;
-            continue;
-        }
-
-        // end parsing number
-        if !buffer_number.is_empty() {
-            items.push(ItemStack::Expr::Const(buffer_number.parse().unwrap()));
-            buffer_number = String::new();
-        }
-
-        if is_variable_char(sub_char) {
-            items.push(ItemStack::Expr::Var(sub_char));
-            i += 1;
-            continue;
-        }
+    let i: usize = 0;
+    let len = nodes.len();
+    while i < len {
+        let sub_char: char = nodes[i].ch;
 
         if is_operator_char(sub_char) {
-            items.push(get_operator(sub_char));
-            i += 1;
-            continue;
-        }
-
-        if sub_char == '(' {
-            let (expr, newIndex) = get_expression(&string, i + 1);
-            items.push(expr);
-            i = newIndex;
-            continue;
-        }
-
-        if sub_char == ')' {
-            break;
+            if is_operator_high_priority_char(sub_char) {
+                buffer.push(sub_char);
+            } else {
+                buffer.push(sub_char);
+                result_string = format!("{}{}", result_string, buffer);
+                buffer = String::new();
+            }
         }
     }
 
-    // TODO: Sorting items by priority and return
+    return result_string;
+}
+
+fn get_nodes(string: String) -> Vec<String> {
+    let mut nodes: Vec<String> = Vec::new();
+    let mut buffer: String = String::new();
+
+    let mut i: usize = 0;
+    let chars = string.chars().collect::<Vec<char>>();
+    let len = chars.len();
+    while i < len {
+        let sub_char: char = chars[i];
+
+        if is_number_char(sub_char) {
+            buffer.push(sub_char);
+            if i == len - 1 {
+                nodes.push(buffer);
+                buffer = String::new();
+            }
+        }
+
+        if is_operator_char(sub_char) {
+            nodes.push(buffer);
+            nodes.push(sub_char.to_string());
+            buffer = String::new();
+        }
+
+        i += 1;
+    }
+
+    return nodes;
+}
+
+fn calculate_brackets_part(string: &String, index: usize) -> (String, usize) {
+    let mut result_string = String::new();
+    let mut i: usize = index;
+
+    let chars = string.chars().collect::<Vec<char>>();
+
+    while i <= chars.len() {
+        let sub_char: char = chars[i];
+        println!("{} -> {}", i, result_string);
+
+        if sub_char == '(' {
+            let (result_string_nested, new_index) = calculate_brackets_part(&string, i + 1);
+            result_string = format!("{}{}", result_string, result_string_nested);
+            i = new_index;
+        }
+
+        if sub_char == ')' {
+            i += 1;
+            break;
+        }
+
+        result_string.push(sub_char);
+
+        i += 1;
+    }
+
+    let nodes = get_nodes(result_string.clone());
+    let result_nodes = calculate_high_priority_expression(nodes);
+    println!("Expression in brackets {}", result_string);
+
+    return (result_string, i);
+}
+
+pub fn calculate_brackets(string: String) -> String {
+    let mut result_string = String::new();
+    let mut i: usize = 0;
+
+    let chars = string.chars().collect::<Vec<char>>();
+
+    while i <= chars.len() {
+        println!("{} -> {}", i, result_string);
+        let sub_char: char = chars[i];
+
+        if sub_char == '(' {
+            let (result_string_nested, new_index) = calculate_brackets_part(&string, i + 1);
+            result_string = format!("{}{}", result_string, result_string_nested);
+            i = new_index;
+            continue;
+        }
+
+        result_string.push(sub_char);
+
+        i += 1;
+    }
+
+    return result_string;
 }
