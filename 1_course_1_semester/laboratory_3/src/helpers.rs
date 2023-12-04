@@ -1,5 +1,6 @@
-use regex::{Captures, Regex};
+use regex::{Regex};
 use std::env::Args;
+use std::rc::Rc;
 
 enum Operator {
     PLUS,
@@ -8,12 +9,12 @@ enum Operator {
     DIVIDE,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 enum Expr {
     Const(f64),
     Var(String),
     Unary(Box<Expr>),
-    Binary(String, Box<Expr>, Box<Expr>),
+    Binary(char, Box<Expr>, Box<Expr>),
 }
 
 fn get_operator(sub_char: char) -> Operator {
@@ -33,8 +34,22 @@ fn is_operator_char(sub_char: char) -> bool {
     }
 }
 
+fn is_operator(operator: &String) -> bool {
+    match Regex::new(r"[\+\-\*\/]").unwrap().is_match(operator) {
+        true => { true }
+        false => { false }
+    }
+}
+
 fn is_operator_high_priority_char(sub_char: char) -> bool {
     match Regex::new(r"[\*\/]").unwrap().is_match(&String::from(sub_char)) {
+        true => { true }
+        false => { false }
+    }
+}
+
+fn is_operator_high_priority(operator: &String) -> bool {
+    match Regex::new(r"[\*\/]").unwrap().is_match(operator) {
         true => { true }
         false => { false }
     }
@@ -118,28 +133,60 @@ pub fn validate_string(string: &String) -> bool {
     true
 }
 
+fn calculate_expression(expression: Expr) -> String {
+    let result = match expression {
+        Expr::Binary(operator, Expr::Const(x), Expr::Const(y)) => {
+            match operator {
+                '+' => { Some(x + y) }
+                '-' => { Some(x - y) }
+                '*' => { Some(x * y) }
+                '/' => { Some(x / y) }
+                _ => { Some(x + y) }
+            }
+        }
+        _ => { None }
+    };
+
+    return result.unwrap().to_string();
+}
+
+fn calculate_simple_binary(value_1: String, operator: char, value_2: String) -> String {
+    let value_1: f64 = value_1.parse().unwrap();
+    let value_1: Expr = Expr::Const(value_1);
+    let value_2: f64 = value_2.parse().unwrap();
+    let value_2: Expr = Expr::Const(value_2);
+
+    calculate_expression(Expr::Binary(operator, Box::new(value_1), Box::new(value_2)))
+}
+
 fn calculate_high_priority_expression(nodes: Vec<String>) -> Vec<String> {
     // TODO: to complete
+    // TODO: add unary operator
     let mut result_nodes: Vec<String> = Vec::new();
     let mut buffer_nodes: Vec<String> = Vec::new();
 
-    let i: usize = 0;
-    let len = nodes.len();
-    while i < len {
-        let sub_char: char = nodes[i].ch;
+    let mut i: usize = 0;
+    let nodes_len = nodes.len();
+    while i < nodes_len {
+        let node_item = nodes[i].clone();
+        println!("{}", node_item);
 
-        if is_operator_char(sub_char) {
-            if is_operator_high_priority_char(sub_char) {
-                buffer.push(sub_char);
-            } else {
-                buffer.push(sub_char);
-                result_string = format!("{}{}", result_string, buffer);
-                buffer = String::new();
-            }
+        if is_operator_high_priority(&node_item) {
+            let calculated_string = calculate_simple_binary(buffer_nodes.pop().unwrap(), node_item.chars().nth(0).unwrap(), nodes[i + 1].clone());
+            result_nodes.append(&mut buffer_nodes);
+            result_nodes.push(calculated_string);
+            i += 2;
+            continue;
         }
+
+        buffer_nodes.push(node_item);
+
+        i += 1;
     }
 
-    return result_string;
+    result_nodes.append(&mut buffer_nodes);
+
+    return result_nodes;
 }
 
 fn get_nodes(string: String) -> Vec<String> {
