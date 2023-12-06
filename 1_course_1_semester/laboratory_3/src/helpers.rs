@@ -1,6 +1,5 @@
 use regex::{Regex};
 use std::env::Args;
-use std::rc::Rc;
 
 enum Operator {
     PLUS,
@@ -134,15 +133,17 @@ pub fn validate_string(string: &String) -> bool {
 }
 
 fn calculate_expression(expression: Expr) -> String {
-    let result = match expression {
-        Expr::Binary(operator, Expr::Const(x), Expr::Const(y)) => {
-            match operator {
-                '+' => { Some(x + y) }
-                '-' => { Some(x - y) }
-                '*' => { Some(x * y) }
-                '/' => { Some(x / y) }
-                _ => { Some(x + y) }
-            }
+    let result = match &expression {
+        Expr::Binary(operator, exp_1, exp_2) if matches!(exp_1, Expr) && matches!(exp_2, Expr) => {
+            println!("Expr -> {:?} - {:?}", exp_1, exp_2);
+            Some(0) // TODO: to complete
+            // match operator {
+            //     '+' => { Some(x + y) }
+            //     '-' => { Some(x - y) }
+            //     '*' => { Some(x * y) }
+            //     '/' => { Some(x / y) }
+            //     _ => { Some(x + y) }
+            // }
         }
         _ => { None }
     };
