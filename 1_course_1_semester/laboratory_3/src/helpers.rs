@@ -8,7 +8,7 @@ enum Operator {
     DIVIDE,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 enum Expr {
     Const(f64),
     Var(String),
@@ -133,21 +133,31 @@ pub fn validate_string(string: &String) -> bool {
 }
 
 fn calculate_expression(expression: Expr) -> String {
-    let result = match &expression {
-        Expr::Binary(operator, exp_1, exp_2) if matches!(exp_1, Expr) && matches!(exp_2, Expr) => {
-            println!("Expr -> {:?} - {:?}", exp_1, exp_2);
-            Some(0) // TODO: to complete
-            // match operator {
-            //     '+' => { Some(x + y) }
-            //     '-' => { Some(x - y) }
-            //     '*' => { Some(x * y) }
-            //     '/' => { Some(x / y) }
-            //     _ => { Some(x + y) }
-            // }
+    let result = match expression {
+        Expr::Binary(operator, exp_1, exp_2) => {
+            let x = *exp_1;
+            let y = *exp_2;
+            let x = match x {
+                Expr::Const(val) => { Some(val) }
+                _ => { None }
+            };
+            let y = match y {
+                Expr::Const(val) => { Some(val) }
+                _ => { None }
+            };
+            let x = x.unwrap();
+            let y = y.unwrap();
+            let result = match operator {
+                '+' => { x + y }
+                '-' => { x - y }
+                '*' => { x * y }
+                '/' => { x / y }
+                _ => { x + y }
+            };
+            Some(result)
         }
         _ => { None }
     };
-
     return result.unwrap().to_string();
 }
 
@@ -161,7 +171,6 @@ fn calculate_simple_binary(value_1: String, operator: char, value_2: String) -> 
 }
 
 fn calculate_high_priority_expression(nodes: Vec<String>) -> Vec<String> {
-    // TODO: to complete
     // TODO: add unary operator
     let mut result_nodes: Vec<String> = Vec::new();
     let mut buffer_nodes: Vec<String> = Vec::new();
@@ -170,7 +179,6 @@ fn calculate_high_priority_expression(nodes: Vec<String>) -> Vec<String> {
     let nodes_len = nodes.len();
     while i < nodes_len {
         let node_item = nodes[i].clone();
-        println!("{}", node_item);
 
         if is_operator_high_priority(&node_item) {
             let calculated_string = calculate_simple_binary(buffer_nodes.pop().unwrap(), node_item.chars().nth(0).unwrap(), nodes[i + 1].clone());
@@ -186,7 +194,6 @@ fn calculate_high_priority_expression(nodes: Vec<String>) -> Vec<String> {
     }
 
     result_nodes.append(&mut buffer_nodes);
-
     return result_nodes;
 }
 
@@ -247,7 +254,10 @@ fn calculate_brackets_part(string: &String, index: usize) -> (String, usize) {
     }
 
     let nodes = get_nodes(result_string.clone());
-    let result_nodes = calculate_high_priority_expression(nodes);
+    println!("nodes {:?}", nodes);
+    let nodes = calculate_high_priority_expression(nodes);
+    // TODO: to complete calculate_low_priority_expression
+    println!("nodes calculate high priority {:?}", nodes);
     println!("Expression in brackets {}", result_string);
 
     return (result_string, i);
