@@ -173,27 +173,28 @@ fn calculate_simple_binary(value_1: String, operator: char, value_2: String) -> 
 fn calculate_high_priority_expression(nodes: &Vec<String>) -> Vec<String> {
     // TODO: add variable
     let mut result_nodes: Vec<String> = Vec::new();
-    let mut buffer_nodes: Vec<String> = Vec::new();
 
     let mut i: usize = 0;
     let nodes_len = nodes.len();
     while i < nodes_len {
-        let node_item = nodes[i].clone();
+        let node = nodes[i].clone();
 
-        if is_operator_high_priority(&node_item) {
-            let calculated_string = calculate_simple_binary(buffer_nodes.pop().unwrap(), node_item.chars().nth(0).unwrap(), nodes[i + 1].clone());
-            result_nodes.append(&mut buffer_nodes);
+        if is_operator_high_priority(&node) {
+            let calculated_string = calculate_simple_binary(
+                result_nodes.pop().unwrap_or("0.0".to_string()),
+                node.chars().nth(0).unwrap(),
+                nodes[i + 1].clone(),
+            );
             result_nodes.push(calculated_string);
             i += 2;
             continue;
         }
 
-        buffer_nodes.push(node_item);
+        result_nodes.push(node);
 
         i += 1;
     }
 
-    result_nodes.append(&mut buffer_nodes);
     return result_nodes;
 }
 
@@ -244,7 +245,7 @@ pub fn get_nodes(string: &String) -> Vec<String> {
             continue;
         }
 
-        if sub_char == '-' {
+        if sub_char == '-' && is_number_char(chars[i + 1]) {
             if is_number_char(buffer.chars().last().unwrap_or('+')) {
                 nodes.push(buffer);
                 buffer = String::new();
@@ -283,7 +284,7 @@ pub fn get_nodes(string: &String) -> Vec<String> {
     return nodes;
 }
 
-fn calculate_brackets_part(nodes: &Vec<String>, index: usize) -> (f64, usize) {
+fn calculate_vector_between_brackets(nodes: &Vec<String>, index: usize) -> (f64, usize) {
     let mut result_vector: Vec<String> = Vec::new();
     let mut i: usize = index;
 
@@ -291,7 +292,7 @@ fn calculate_brackets_part(nodes: &Vec<String>, index: usize) -> (f64, usize) {
         let node = nodes[i].clone();
 
         if node == '('.to_string() {
-            let (result_nested, new_index) = calculate_brackets_part(nodes, i + 1);
+            let (result_nested, new_index) = calculate_vector_between_brackets(nodes, i + 1);
             result_vector.push(result_nested.to_string());
             i = new_index;
             continue;
@@ -313,7 +314,7 @@ fn calculate_brackets_part(nodes: &Vec<String>, index: usize) -> (f64, usize) {
     return (result, i);
 }
 
-pub fn calculate_brackets(nodes: Vec<String>) -> Vec<String> {
+pub fn calculate_vector_brackets(nodes: Vec<String>) -> Vec<String> {
     let mut result_vector: Vec<String> = Vec::new();
     let mut i: usize = 0;
 
@@ -321,7 +322,7 @@ pub fn calculate_brackets(nodes: Vec<String>) -> Vec<String> {
         let node = nodes[i].clone();
 
         if node == '('.to_string() {
-            let (result, new_index) = calculate_brackets_part(&nodes, i + 1);
+            let (result, new_index) = calculate_vector_between_brackets(&nodes, i + 1);
 
             result_vector.push(result.to_string());
 
@@ -337,7 +338,7 @@ pub fn calculate_brackets(nodes: Vec<String>) -> Vec<String> {
     return result_vector;
 }
 
-pub fn calculate_without_brackets(nodes: Vec<String>) -> f64 {
+pub fn calculate_vector_without_brackets(nodes: Vec<String>) -> f64 {
     let calculated_nodes = calculate_high_priority_expression(&nodes);
     calculate_low_priority_expression(calculated_nodes)
 }

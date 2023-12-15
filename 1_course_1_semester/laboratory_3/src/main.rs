@@ -1,6 +1,12 @@
 mod helpers;
 
-use crate::helpers::{calculate_brackets, get_prepared_string, validate_string, get_nodes, calculate_without_brackets};
+use crate::helpers::{
+    calculate_vector_brackets,
+    get_prepared_string,
+    validate_string,
+    get_nodes,
+    calculate_vector_without_brackets,
+};
 
 fn main() {
     let prepared_string = get_prepared_string(std::env::args());
@@ -15,9 +21,9 @@ fn main() {
         return;
     }
 
-    println!("Prepared expression: {:?}", prepared_string);
+    println!("Prepared the calculation string: {:?}", prepared_string);
     let nodes = get_nodes(&prepared_string);
-    let nodes_without_brackets = calculate_brackets(nodes);
-    let result = calculate_without_brackets(nodes_without_brackets);
+    let nodes_without_brackets = calculate_vector_brackets(nodes);
+    let result = calculate_vector_without_brackets(nodes_without_brackets);
     println!("Result: {result}");
 }
