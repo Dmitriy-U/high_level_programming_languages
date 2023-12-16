@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use regex::{Regex};
-use std::env::Args;
+use std::env::{Args, var};
+use std::io;
 
 enum Operator {
     PLUS,
@@ -40,6 +42,13 @@ fn is_operator(operator: &String) -> bool {
     }
 }
 
+fn is_variable(operator: &String) -> bool {
+    match Regex::new(r"[a-zA-Z]").unwrap().is_match(operator) {
+        true => { true }
+        false => { false }
+    }
+}
+
 fn is_operator_high_priority_char(sub_char: char) -> bool {
     match Regex::new(r"[\*\/]").unwrap().is_match(&String::from(sub_char)) {
         true => { true }
@@ -65,6 +74,13 @@ fn is_number_char(sub_char: char) -> bool {
     match Regex::new(r"[0-9\.]").unwrap().is_match(&String::from(sub_char)) {
         true => { true }
         false => { false }
+    }
+}
+
+fn is_number(string: &String) -> bool {
+    match string.parse() {
+        Some(_) => { true }
+        None => { false }
     }
 }
 
@@ -311,7 +327,34 @@ fn calculate_vector_between_brackets(nodes: &Vec<String>, index: usize) -> (f64,
     let calculated_nodes = calculate_high_priority_expression(&result_vector);
     let result = calculate_low_priority_expression(calculated_nodes);
 
-    return (result, i);
+    (result, i)
+}
+
+fn get_input_user_value(variable: &String) -> String {
+    loop {
+        println!("Enter a value (float) for variable {variable}:");
+        let mut user_input = String::new();
+        io::stdin().read_line(&mut user_input).expect("An incorrect variable was entered");
+        user_input = String::from(user_input.trim());
+
+        if is_number(&user_input) {
+            break user_input
+        } else {
+            println!("You need to type correct value of variable");
+        }
+    }
+}
+
+pub fn get_variables(nodes: &Vec<String>) -> HashMap<String,String> {
+    let mut variables: HashMap<String, String> = HashMap::new();
+
+    for node in nodes {
+        if is_variable(node) {
+            variables.insert(node.clone(), get_input_user_value(node));
+        }
+    }
+
+    variables
 }
 
 pub fn calculate_vector_brackets(nodes: Vec<String>) -> Vec<String> {

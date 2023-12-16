@@ -1,12 +1,8 @@
 mod helpers;
 
-use crate::helpers::{
-    calculate_vector_brackets,
-    get_prepared_string,
-    validate_string,
-    get_nodes,
-    calculate_vector_without_brackets,
-};
+use std::collections::HashMap;
+
+use crate::helpers::{calculate_vector_brackets, get_prepared_string, validate_string, get_nodes, calculate_vector_without_brackets, get_variables};
 
 fn main() {
     let prepared_string = get_prepared_string(std::env::args());
@@ -16,6 +12,7 @@ fn main() {
         return;
     }
 
+    // TODO: validate double variable
     let prepared_string = prepared_string.unwrap();
     if !validate_string(&prepared_string) {
         return;
@@ -23,6 +20,9 @@ fn main() {
 
     println!("Prepared the calculation string: {:?}", prepared_string);
     let nodes = get_nodes(&prepared_string);
+    println!("{nodes:?}");
+    let variables = get_variables(&nodes);
+    println!("{variables:?}");
     let nodes_without_brackets = calculate_vector_brackets(nodes);
     let result = calculate_vector_without_brackets(nodes_without_brackets);
     println!("Result: {result}");
