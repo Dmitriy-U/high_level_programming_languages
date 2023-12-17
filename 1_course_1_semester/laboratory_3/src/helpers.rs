@@ -1,14 +1,6 @@
-use std::collections::HashMap;
 use regex::{Regex};
-use std::env::{Args, var};
+use std::env::{Args};
 use std::io;
-
-enum Operator {
-    PLUS,
-    MINUS,
-    MULTIPLY,
-    DIVIDE,
-}
 
 #[derive(Debug, Clone)]
 enum Expr {
@@ -16,16 +8,6 @@ enum Expr {
     Var(String),
     Unary(Box<Expr>),
     Binary(char, Box<Expr>, Box<Expr>),
-}
-
-fn get_operator(sub_char: char) -> Operator {
-    match sub_char {
-        '+' => Operator::PLUS,
-        '-' => Operator::MINUS,
-        '*' => Operator::MULTIPLY,
-        '/' => Operator::DIVIDE,
-        _ => Operator::PLUS
-    }
 }
 
 fn is_operator_char(sub_char: char) -> bool {
@@ -49,22 +31,8 @@ fn is_variable(operator: &String) -> bool {
     }
 }
 
-fn is_operator_high_priority_char(sub_char: char) -> bool {
-    match Regex::new(r"[\*\/]").unwrap().is_match(&String::from(sub_char)) {
-        true => { true }
-        false => { false }
-    }
-}
-
 fn is_operator_high_priority(operator: &String) -> bool {
     match Regex::new(r"[\*\/]").unwrap().is_match(operator) {
-        true => { true }
-        false => { false }
-    }
-}
-
-fn is_variable_char(sub_char: char) -> bool {
-    match Regex::new(r"[a-zA-Z]").unwrap().is_match(&String::from(sub_char)) {
         true => { true }
         false => { false }
     }
@@ -78,74 +46,7 @@ fn is_number_char(sub_char: char) -> bool {
 }
 
 fn is_number(string: &String) -> bool {
-    match string.parse() {
-        Some(_) => { true }
-        None => { false }
-    }
-}
-
-pub fn get_prepared_string(args: Args) -> Option<String> {
-    let args: Vec<String> = args.skip(1).collect();
-
-    if args.is_empty() {
-        return None;
-    }
-
-    let trimmed_string = args[0].to_string().replace(" ", "");
-
-    let mut prepared_string = String::new();
-
-    let chars = trimmed_string.chars().collect::<Vec<char>>();
-    let mut i: usize = 0;
-
-    while i < chars.len() {
-        let sub_char = chars[i];
-
-        if sub_char == '(' && i != 0 {
-            if is_number_char(chars[i - 1].clone()) {
-                prepared_string.push('*');
-            }
-        }
-
-        prepared_string.push(sub_char);
-        i += 1;
-    }
-
-    // TODO: --1 => +1
-
-    return Some(prepared_string);
-}
-
-pub fn validate_string(string: &String) -> bool {
-    // check too many points in digits
-    let result = match Regex::new(r"\d+\.\d+\.").unwrap().find(string) {
-        None => { true }
-        Some(found_too_many_points) => {
-            println!("Found too many points: \"{}\"", found_too_many_points.as_str());
-            false
-        }
-    };
-    if !result { return false; }
-
-    // check too many operators
-    let result = match Regex::new(r"[\+\-\*\/]{3}").unwrap().find(string) {
-        None => { true }
-        Some(found_double_match) => {
-            println!("More operators: \"{}\"", found_double_match.as_str());
-            false
-        }
-    };
-    if !result { return false; }
-
-    // check brackets
-    let bracket_open_length: usize = string.matches('(').collect::<Vec<_>>().len();
-    let bracket_close_length: usize = string.matches('(').collect::<Vec<_>>().len();
-    if bracket_open_length != bracket_close_length {
-        println!("Chars \"(\" and \")\" not satisfied");
-        return false;
-    }
-
-    true
+    string.parse::<f64>().is_ok()
 }
 
 fn calculate_expression(expression: Expr) -> String {
@@ -187,7 +88,6 @@ fn calculate_simple_binary(value_1: String, operator: char, value_2: String) -> 
 }
 
 fn calculate_high_priority_expression(nodes: &Vec<String>) -> Vec<String> {
-    // TODO: add variable
     let mut result_nodes: Vec<String> = Vec::new();
 
     let mut i: usize = 0;
@@ -196,6 +96,12 @@ fn calculate_high_priority_expression(nodes: &Vec<String>) -> Vec<String> {
         let node = nodes[i].clone();
 
         if is_operator_high_priority(&node) {
+            println!(
+                "--> {nodes:?} {} {} {}",
+                result_nodes.pop().unwrap_or("0.0".to_string()),
+                node.chars().nth(0).unwrap(),
+                nodes[i + 1].clone()
+            ); // TODO: calculate 1 * - 1
             let calculated_string = calculate_simple_binary(
                 result_nodes.pop().unwrap_or("0.0".to_string()),
                 node.chars().nth(0).unwrap(),
@@ -215,7 +121,6 @@ fn calculate_high_priority_expression(nodes: &Vec<String>) -> Vec<String> {
 }
 
 fn calculate_low_priority_expression(nodes: Vec<String>) -> f64 {
-    // TODO: add variable
     let mut result: f64 = 0.0;
 
     let mut i: usize = 0;
@@ -225,6 +130,12 @@ fn calculate_low_priority_expression(nodes: Vec<String>) -> f64 {
 
         if is_operator(&node) {
             if i == 1 {
+                println!(
+                    "--> {nodes:?} {} {} {}",
+                    nodes[i - 1].clone(),
+                    node.chars().nth(0).unwrap(),
+                    nodes[i + 1].clone()
+                ); // TODO: calculate 1 + + 1
                 let calculated_string = calculate_simple_binary(nodes[i - 1].clone(), node.chars().nth(0).unwrap(), nodes[i + 1].clone());
                 result = calculated_string.parse::<f64>().unwrap();
             } else {
@@ -239,6 +150,115 @@ fn calculate_low_priority_expression(nodes: Vec<String>) -> f64 {
     }
 
     return result;
+}
+
+fn calculate_vector_between_brackets(nodes: &Vec<String>, index: usize) -> (f64, usize) {
+    let mut result_vector: Vec<String> = Vec::new();
+    let mut i: usize = index;
+
+    while i < nodes.len() {
+        let node = nodes[i].clone();
+
+        if node == '('.to_string() {
+            let (result_nested, new_index) = calculate_vector_between_brackets(nodes, i + 1);
+            result_vector.push(result_nested.to_string());
+            i = new_index;
+            continue;
+        }
+
+        if node == ')'.to_string() {
+            i += 1;
+            break;
+        }
+
+        result_vector.push(node);
+
+        i += 1;
+    }
+
+    let calculated_nodes = calculate_high_priority_expression(&result_vector);
+    let result = calculate_low_priority_expression(calculated_nodes);
+
+    (result, i)
+}
+
+fn get_input_user_value(variable: &String) -> String {
+    loop {
+        println!("Enter a value (float) for variable {variable}:");
+        let mut user_input = String::new();
+        io::stdin().read_line(&mut user_input).expect("An incorrect variable was entered");
+        user_input = String::from(user_input.trim());
+
+        if is_number(&user_input) {
+            println!("You choose: {variable} = {user_input}");
+            break user_input
+        } else {
+            println!("You need to type correct value of variable");
+        }
+    }
+}
+
+pub fn get_prepared_string(args: Args) -> Option<String> {
+    let args: Vec<String> = args.skip(1).collect();
+
+    if args.is_empty() {
+        return None;
+    }
+
+    let trimmed_string = args[0].to_string().replace(" ", "");
+
+    let mut prepared_string = String::new();
+
+    let chars = trimmed_string.chars().collect::<Vec<char>>();
+    let mut i: usize = 0;
+
+    while i < chars.len() {
+        let sub_char = chars[i];
+
+        if sub_char == '(' && i != 0 {
+            let previous_char = chars[i - 1].clone();
+            if is_number_char(previous_char) || previous_char == ')' {
+                prepared_string.push('*');
+            }
+        }
+
+        prepared_string.push(sub_char);
+        i += 1;
+    }
+
+    return Some(prepared_string);
+}
+
+pub fn validate_string(string: &String) -> bool {
+    // check too many points in digits
+    let result = match Regex::new(r"\d+\.\d+\.").unwrap().find(string) {
+        None => { true }
+        Some(found_too_many_points) => {
+            println!("Found too many points: \"{}\"", found_too_many_points.as_str());
+            false
+        }
+    };
+    if !result { return false; }
+
+    // check too many operators
+    let result = match Regex::new(r"[\+\-\*\/]{3}").unwrap().find(string) {
+        None => { true }
+        Some(found_double_match) => {
+            println!("More operators: \"{}\"", found_double_match.as_str());
+            false
+        }
+    };
+    if !result { return false; }
+
+    // check brackets
+    let bracket_open_length: usize = string.matches('(').collect::<Vec<_>>().len();
+    let bracket_close_length: usize = string.matches('(').collect::<Vec<_>>().len();
+    if bracket_open_length != bracket_close_length {
+        println!("Chars \"(\" and \")\" not satisfied");
+        return false;
+    }
+
+    true
 }
 
 pub fn get_nodes(string: &String) -> Vec<String> {
@@ -300,61 +320,13 @@ pub fn get_nodes(string: &String) -> Vec<String> {
     return nodes;
 }
 
-fn calculate_vector_between_brackets(nodes: &Vec<String>, index: usize) -> (f64, usize) {
-    let mut result_vector: Vec<String> = Vec::new();
-    let mut i: usize = index;
-
-    while i < nodes.len() {
-        let node = nodes[i].clone();
-
-        if node == '('.to_string() {
-            let (result_nested, new_index) = calculate_vector_between_brackets(nodes, i + 1);
-            result_vector.push(result_nested.to_string());
-            i = new_index;
-            continue;
-        }
-
-        if node == ')'.to_string() {
-            i += 1;
-            break;
-        }
-
-        result_vector.push(node);
-
-        i += 1;
-    }
-
-    let calculated_nodes = calculate_high_priority_expression(&result_vector);
-    let result = calculate_low_priority_expression(calculated_nodes);
-
-    (result, i)
-}
-
-fn get_input_user_value(variable: &String) -> String {
-    loop {
-        println!("Enter a value (float) for variable {variable}:");
-        let mut user_input = String::new();
-        io::stdin().read_line(&mut user_input).expect("An incorrect variable was entered");
-        user_input = String::from(user_input.trim());
-
-        if is_number(&user_input) {
-            break user_input
-        } else {
-            println!("You need to type correct value of variable");
-        }
-    }
-}
-
-pub fn get_variables(nodes: &Vec<String>) -> HashMap<String,String> {
-    let mut variables: HashMap<String, String> = HashMap::new();
-
-    for node in nodes {
+pub fn change_variables(nodes: &mut Vec<String>) {
+    for node in nodes.iter_mut() {
         if is_variable(node) {
-            variables.insert(node.clone(), get_input_user_value(node));
+            let value = get_input_user_value(node);
+            *node = value;
         }
     }
-
-    variables
 }
 
 pub fn calculate_vector_brackets(nodes: Vec<String>) -> Vec<String> {
