@@ -10,6 +10,16 @@ enum Expr {
     Binary(char, Box<Expr>, Box<Expr>),
 }
 
+fn merge_low_priority_operators(operator_1: char, operator_2: char) -> char {
+    match (operator_1, operator_2) {
+        ('+', '+') => { '+' }
+        ('+', '-') => { '-' }
+        ('-', '+') => { '-' }
+        ('-', '-') => { '+' }
+        _ => { '+' }
+    }
+}
+
 fn is_operator_char(sub_char: char) -> bool {
     match Regex::new(r"[\+\-\*\/]").unwrap().is_match(&String::from(sub_char)) {
         true => { true }
@@ -33,6 +43,20 @@ fn is_variable(operator: &String) -> bool {
 
 fn is_operator_high_priority(operator: &String) -> bool {
     match Regex::new(r"[\*\/]").unwrap().is_match(operator) {
+        true => { true }
+        false => { false }
+    }
+}
+
+fn is_operator_low_priority(operator: &String) -> bool {
+    match Regex::new(r"[\+\-]").unwrap().is_match(operator) {
+        true => { true }
+        false => { false }
+    }
+}
+
+fn is_operator_low_priority_char(operator: char) -> bool {
+    match Regex::new(r"[\+\-]").unwrap().is_match(&operator.to_string()) {
         true => { true }
         false => { false }
     }
@@ -96,12 +120,6 @@ fn calculate_high_priority_expression(nodes: &Vec<String>) -> Vec<String> {
         let node = nodes[i].clone();
 
         if is_operator_high_priority(&node) {
-            println!(
-                "--> {nodes:?} {} {} {}",
-                result_nodes.pop().unwrap_or("0.0".to_string()),
-                node.chars().nth(0).unwrap(),
-                nodes[i + 1].clone()
-            ); // TODO: calculate 1 * - 1
             let calculated_string = calculate_simple_binary(
                 result_nodes.pop().unwrap_or("0.0".to_string()),
                 node.chars().nth(0).unwrap(),
@@ -130,12 +148,6 @@ fn calculate_low_priority_expression(nodes: Vec<String>) -> f64 {
 
         if is_operator(&node) {
             if i == 1 {
-                println!(
-                    "--> {nodes:?} {} {} {}",
-                    nodes[i - 1].clone(),
-                    node.chars().nth(0).unwrap(),
-                    nodes[i + 1].clone()
-                ); // TODO: calculate 1 + + 1
                 let calculated_string = calculate_simple_binary(nodes[i - 1].clone(), node.chars().nth(0).unwrap(), nodes[i + 1].clone());
                 result = calculated_string.parse::<f64>().unwrap();
             } else {
@@ -251,7 +263,7 @@ pub fn validate_string(string: &String) -> bool {
     if !result { return false; }
 
     // check double incorrect operators like "1-/1"
-    let result = match Regex::new(r"[\+\-][/\*]").unwrap().find(string) {
+    let result = match Regex::new(r"[\+\-]{1}[/\*]{1}|\-\+").unwrap().find(string) {
         None => { true }
         Some(found_incorrect_double_operators) => {
             println!("Double incorrect operators: \"{}\"", found_incorrect_double_operators.as_str());
@@ -327,7 +339,42 @@ pub fn get_nodes(string: &String) -> Vec<String> {
         i += 1;
     }
 
+    if buffer.len() > 0 {
+        nodes.push(buffer.clone());
+        buffer = String::new();
+    }
+
     return nodes;
+}
+
+pub fn replace_double_operators(string: String) -> String {
+    let mut result_string: String = String::new();
+    let mut i: usize = 0;
+    let string_items: Vec<char> = string.chars().collect();
+    let string_length: usize = string_items.len();
+
+    while i < string_length {
+        let string_item: char = string_items[i].clone();
+
+        if is_operator_low_priority_char(string_item) {
+            if i + 1 != string_length {
+                let string_item_next: char = string_items[i + 1].clone();
+
+                if is_operator_low_priority_char(string_item_next) {
+                    let operator = merge_low_priority_operators(string_item, string_item_next);
+                    result_string.push(operator);
+                    i += 2;
+                    continue;
+                }
+            }
+        }
+
+        result_string.push(string_item);
+
+        i += 1;
+    }
+
+    result_string
 }
 
 pub fn change_variables(nodes: &mut Vec<String>) {
