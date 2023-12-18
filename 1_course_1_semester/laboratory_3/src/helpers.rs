@@ -250,6 +250,15 @@ pub fn validate_string(string: &String) -> bool {
     };
     if !result { return false; }
 
+    let result = match Regex::new(r"[\+\-][/\*]").unwrap().find(string) {
+        None => { true }
+        Some(found_incorrect_double_operators) => {
+            println!("Double incorrect operators: \"{}\"", found_incorrect_double_operators.as_str());
+            false
+        }
+    };
+    if !result { return false; }
+
     // check brackets
     let bracket_open_length: usize = string.matches('(').collect::<Vec<_>>().len();
     let bracket_close_length: usize = string.matches('(').collect::<Vec<_>>().len();
