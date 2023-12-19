@@ -274,7 +274,7 @@ pub fn validate_string(string: &String) -> bool {
 
     // check brackets
     let bracket_open_length: usize = string.matches('(').collect::<Vec<_>>().len();
-    let bracket_close_length: usize = string.matches('(').collect::<Vec<_>>().len();
+    let bracket_close_length: usize = string.matches(')').collect::<Vec<_>>().len();
     if bracket_open_length != bracket_close_length {
         println!("Chars \"(\" and \")\" not satisfied");
         return false;
