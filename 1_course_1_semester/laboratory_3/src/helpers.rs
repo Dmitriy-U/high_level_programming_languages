@@ -1,5 +1,6 @@
+use std::collections::HashMap;
 use regex::{Regex};
-use std::env::{Args};
+use std::env::{Args, var};
 use std::io;
 
 #[derive(Debug, Clone)]
@@ -28,7 +29,7 @@ fn is_operator_char(sub_char: char) -> bool {
 }
 
 fn is_operator(operator: &String) -> bool {
-    match Regex::new(r"[\+\-\*\/]").unwrap().is_match(operator) {
+    match Regex::new(r"^[\+\-\*\/]$").unwrap().is_match(operator) {
         true => { true }
         false => { false }
     }
@@ -143,6 +144,12 @@ fn calculate_low_priority_expression(nodes: Vec<String>) -> f64 {
 
     let mut i: usize = 0;
     let nodes_len = nodes.len();
+    if nodes_len == 1 {
+        let node = nodes[i].clone();
+        result = node.parse::<f64>().unwrap();
+        return result;
+    }
+
     while i < nodes_len {
         let node = nodes[i].clone();
 
@@ -303,13 +310,15 @@ pub fn get_nodes(string: &String) -> Vec<String> {
             continue;
         }
 
-        if sub_char == '-' && is_number_char(chars[i + 1]) {
-            if is_number_char(buffer.chars().last().unwrap_or('+')) {
-                nodes.push(buffer);
-                buffer = String::new();
-                nodes.push('+'.to_string());
-            }
-            buffer.push(sub_char);
+        if sub_char == '-' {
+            // if is_number_char(buffer.chars().last().unwrap_or('+')) {
+            //     nodes.push(buffer);
+            //     buffer = String::new();
+            //     nodes.push('+'.to_string());
+            // }
+            // buffer.push(sub_char);
+            nodes.push(sub_char.to_string());
+            buffer = String::new();
             i += 1;
             continue;
         }
@@ -325,6 +334,16 @@ pub fn get_nodes(string: &String) -> Vec<String> {
         }
 
         if is_operator_char(sub_char) {
+            if buffer.len() > 0 {
+                nodes.push(buffer.clone());
+                buffer = String::new();
+            }
+            nodes.push(sub_char.to_string());
+            i += 1;
+            continue;
+        }
+
+        if is_variable(&sub_char.to_string()) {
             if buffer.len() > 0 {
                 nodes.push(buffer.clone());
                 buffer = String::new();
@@ -378,10 +397,20 @@ pub fn replace_double_operators(string: String) -> String {
 }
 
 pub fn change_variables(nodes: &mut Vec<String>) {
+    let mut variables: HashMap<String, String> = HashMap::new();
+
     for node in nodes.iter_mut() {
         if is_variable(node) {
-            let value = get_input_user_value(node);
-            *node = value;
+            match variables.get(node) {
+                None => {
+                    let value = get_input_user_value(node);
+                    variables.insert(node.clone(), value.clone());
+                    *node = value;
+                }
+                Some(value) => {
+                    *node = value.clone();
+                }
+            }
         }
     }
 }

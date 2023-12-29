@@ -1,0 +1,1 @@
+/home/orpo/magistracy/high_level_programming_languages/1_course_1_semester/lesson_2023_12_01/target/debug/lesson_2023_12_01: /home/orpo/magistracy/high_level_programming_languages/1_course_1_semester/lesson_2023_12_01/src/main.rs
